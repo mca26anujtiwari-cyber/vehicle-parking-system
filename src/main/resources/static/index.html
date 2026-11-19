@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EasyPark & SmartPark — Group 5 Vehicle Parking Management System</title>
+  <title>EasyPark & SmartPark — Vehicle Parking Management System</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -12,366 +14,650 @@
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     .slot-btn { transition: all 0.16s ease; }
     .slot-btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .nav-pill { transition: all 0.15s ease; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
 
-  <!-- Top Navigation -->
-  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+  <!-- Top Navigation Bar -->
+  <header class="bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-30">
+    <div class="w-full px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
       <div class="flex items-center gap-3 min-w-0">
-        <div class="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center font-extrabold text-slate-950 shrink-0">P</div>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-black text-slate-950 text-lg shadow shrink-0">P</div>
         <div class="truncate">
-          <div class="font-bold text-sm sm:text-base leading-tight truncate">EasyPark &amp; SmartPark</div>
-          <div class="text-xs text-slate-400 truncate">Group 5 • GNIMS MCA • Java + Spring Boot + ANPR</div>
+          <div class="font-extrabold text-base sm:text-lg tracking-tight leading-tight truncate">EasyPark &amp; SmartPark</div>
+          <div class="text-[11px] text-slate-400 truncate">Smart Vehicle Parking • Spring Boot + H2 + Live ANPR OCR</div>
         </div>
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-        <span id="backendStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+        <span id="backendStatusBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-700">
           <span id="backendDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
           <span id="backendStatusText">Checking Server...</span>
         </span>
-        <button id="navAuthBtn" type="button" class="hidden px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700">
+        <span id="navUserPill" class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"></span>
+        <button id="navAuthBtn" type="button" class="hidden px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white transition">
           Sign Out
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Toast Banner -->
-  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0 pointer-events-none"></div>
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 sm:px-0 pointer-events-none"></div>
 
-  <!-- Main Content -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 w-full flex flex-col">
 
-    <!-- VIEW 1: ROLE & AUTH SCREEN -->
-    <section id="authView" class="max-w-4xl mx-auto">
-      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-6 sm:p-8 mb-6 shadow-lg">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-3">
-              Full-Stack Portal • Spring Boot + H2 + ANPR
-            </span>
-            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Vehicle Parking Management System</h1>
-            <p class="text-slate-300 text-sm mt-2 max-w-2xl">
-              Unified portal for Drivers (2-Wheeler &amp; 4-Wheeler slot booking, UPI/Card/Cash checkout) and Admins (live parking records, revenue KPIs, and ANPR camera gate scanner).
-            </p>
+    <!-- ========================================================= -->
+    <!-- VIEW 1: FULL-PAGE SPLIT AUTHENTICATION EXPERIENCE         -->
+    <!-- ========================================================= -->
+    <section id="authView" class="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-8rem)]">
+
+      <!-- Left Showcase Panel -->
+      <div class="lg:col-span-6 xl:col-span-7 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white p-8 sm:p-12 lg:p-14 flex flex-col justify-between">
+        <div class="space-y-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Live Full-Stack Cloud Deployment • Java 17 + Spring Boot
           </div>
-          <div class="bg-slate-950/60 border border-slate-700/80 rounded-xl p-4 text-xs space-y-1.5 shrink-0">
-            <div class="font-semibold text-emerald-300">Demo Credentials</div>
-            <div><span class="text-slate-400">User:</span> <code class="text-white">user</code> / <code class="text-white">user123</code></div>
-            <div><span class="text-slate-400">Admin:</span> <code class="text-white">admin</code> / <code class="text-white">admin123</code></div>
+          <h1 class="text-3xl sm:text-4xl xl:text-5xl font-extrabold tracking-tight leading-tight">
+            Intelligent Vehicle Parking &amp; <span class="text-emerald-400">ANPR Gate</span> Platform
+          </h1>
+          <p class="text-slate-300 text-sm sm:text-base max-w-xl leading-relaxed">
+            Seamless 2-Wheeler &amp; 4-Wheeler slot allocation powered by Java Collections, instant UPI/Card/Cash checkout, real-time H2 SQL tracking, and automated number-plate OCR scanning.
+          </p>
+
+          <!-- Feature / Metric Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div class="text-2xl font-extrabold text-emerald-400">90</div>
+              <div class="text-xs text-slate-300 mt-0.5">Total Smart Slots</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div class="text-2xl font-extrabold text-white">₹30<span class="text-xs font-normal text-slate-400">/hr</span></div>
+              <div class="text-xs text-slate-300 mt-0.5">4-Wheeler (Zones A–C)</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div class="text-2xl font-extrabold text-white">₹20<span class="text-xs font-normal text-slate-400">/hr</span></div>
+              <div class="text-xs text-slate-300 mt-0.5">2-Wheeler (Floors 1–3)</div>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div class="text-2xl font-extrabold text-indigo-400">OCR</div>
+              <div class="text-xs text-slate-300 mt-0.5">Live Plate Scanner</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Demo Credentials Card -->
+        <div class="mt-8 bg-slate-950/70 border border-slate-800 rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div class="space-y-1">
+            <div class="text-emerald-400 font-bold uppercase tracking-wider">Driver / User Account</div>
+            <div class="text-slate-300">Username: <code class="text-white font-semibold">user</code> &nbsp;|&nbsp; Password: <code class="text-white font-semibold">User@123</code></div>
+            <div class="text-slate-400">Reset Email/Phone: <code>user@easypark.com</code> / <code>9876543210</code></div>
+          </div>
+          <div class="space-y-1">
+            <div class="text-indigo-400 font-bold uppercase tracking-wider">Admin + ANPR Account</div>
+            <div class="text-slate-300">Username: <code class="text-white font-semibold">admin</code> &nbsp;|&nbsp; Password: <code class="text-white font-semibold">Admin@123</code></div>
+            <div class="text-slate-400">Reset Email/Phone: <code>admin@easypark.com</code> / <code>9999999999</code></div>
           </div>
         </div>
       </div>
 
-      <!-- Auth Tabs -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="grid grid-cols-3 border-b border-slate-200 bg-slate-50">
-          <button type="button" data-auth-tab="userLogin" class="auth-tab-btn py-3.5 px-4 text-sm font-semibold border-b-2 border-emerald-600 text-emerald-700 bg-white">
-            User Login
-          </button>
-          <button type="button" data-auth-tab="userSignup" class="auth-tab-btn py-3.5 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900">
-            New User Sign Up
-          </button>
-          <button type="button" data-auth-tab="adminLogin" class="auth-tab-btn py-3.5 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900">
-            Admin Login
-          </button>
-        </div>
+      <!-- Right Auth Form Panel -->
+      <div class="lg:col-span-6 xl:col-span-5 bg-white p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
+        <div class="w-full max-w-md mx-auto space-y-6">
+          <div>
+            <h2 id="authHeading" class="text-2xl font-extrabold text-slate-900">Sign in to your account</h2>
+            <p id="authSubheading" class="text-sm text-slate-500 mt-1">Choose your portal role, register, or reset your password.</p>
+          </div>
 
-        <div class="p-6 sm:p-8">
-          <!-- User Login Form -->
-          <form id="userLoginForm" class="space-y-4 max-w-md mx-auto">
+          <!-- 4 Auth Mode Tabs -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <button type="button" data-auth-tab="userLogin" class="auth-tab-btn py-2 px-2 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm">
+              User Login
+            </button>
+            <button type="button" data-auth-tab="adminLogin" class="auth-tab-btn py-2 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900">
+              Admin Login
+            </button>
+            <button type="button" data-auth-tab="userSignup" class="auth-tab-btn py-2 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900">
+              Sign Up
+            </button>
+            <button type="button" data-auth-tab="resetPassword" class="auth-tab-btn py-2 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900">
+              Reset Pass
+            </button>
+          </div>
+
+          <!-- Inline Auth Error / Success Alert -->
+          <div id="authAlertBox" class="hidden rounded-xl p-3.5 text-sm font-medium border"></div>
+
+          <!-- 1. USER LOGIN FORM -->
+          <form id="userLoginForm" class="space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Username</label>
-              <input id="loginUsername" type="text" value="user" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter username (e.g. user)" />
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username</label>
+              <input id="loginUsername" type="text" required class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. user" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Password</label>
-              <input id="loginPassword" type="password" value="user123" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter password" />
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
+                <button type="button" id="forgotFromUserBtn" class="text-xs font-semibold text-emerald-700 hover:underline">Forgot password?</button>
+              </div>
+              <div class="relative">
+                <input id="loginPassword" type="password" required class="w-full px-4 py-3 pr-16 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Enter your password" />
+                <button type="button" data-toggle-pass="loginPassword" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-900">Show</button>
+              </div>
             </div>
-            <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition">
+            <button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition">
               Sign In as Driver / User
             </button>
           </form>
 
-          <!-- User Sign Up Form -->
-          <form id="userSignupForm" class="hidden space-y-4 max-w-lg mx-auto">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- 2. ADMIN LOGIN FORM -->
+          <form id="adminLoginForm" class="hidden space-y-4">
+            <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900 font-medium">
+              Restricted to administrators. Unlocks live H2 database records, revenue KPIs, and ANPR Camera OCR.
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Admin Username</label>
+              <input id="adminUsername" type="text" required class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="e.g. admin" />
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Admin Password</label>
+                <button type="button" id="forgotFromAdminBtn" class="text-xs font-semibold text-indigo-700 hover:underline">Reset password?</button>
+              </div>
+              <div class="relative">
+                <input id="adminPassword" type="password" required class="w-full px-4 py-3 pr-16 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Enter admin password" />
+                <button type="button" data-toggle-pass="adminPassword" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-900">Show</button>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-sm transition">
+              Sign In to Admin &amp; ANPR Console
+            </button>
+          </form>
+
+          <!-- 3. NEW USER SIGN UP FORM -->
+          <form id="userSignupForm" class="hidden space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Email</label>
-                <input id="regEmail" type="email" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. anuj@gnims.com" />
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username</label>
+                <input id="regUsername" type="text" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="e.g. anuj112" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Username</label>
-                <input id="regUsername" type="text" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. anuj112" />
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email</label>
+                <input id="regEmail" type="email" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="anuj@gnims.com" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Password</label>
-                <input id="regPassword" type="password" required minlength="4" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Min 4 characters" />
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mobile (10 digits)</label>
+                <input id="regPhone" type="tel" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="9876543210" />
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mobile (10 digits)</label>
-                <input id="regPhone" type="tel" required pattern="^[6-9]\d{9}$" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="9876543210" />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Vehicle Type</label>
-                <select id="regVehicleType" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle Type</label>
+                <select id="regVehicleType" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                   <option value="4 Wheeler">4 Wheeler (₹30/hr)</option>
                   <option value="2 Wheeler">2 Wheeler (₹20/hr)</option>
                 </select>
               </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Vehicle Plate Number</label>
-                <input id="regPlate" type="text" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="MH03AW1111" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle Plate Number</label>
+              <input id="regPlate" type="text" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="MH03AW1111" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password (1 Uppercase Required)</label>
+              <div class="relative">
+                <input id="regPassword" type="password" required class="w-full px-3.5 py-2.5 pr-16 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="e.g. Anuj@123" />
+                <button type="button" data-toggle-pass="regPassword" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-900">Show</button>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                <span id="regRuleUpper" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">○ 1 Uppercase (A–Z)</span>
+                <span id="regRuleLen" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">○ Min 6 characters</span>
               </div>
             </div>
-            <p class="text-xs text-slate-500">Indian plate format validated: e.g. <code>MH02AB1234</code> or <code>MH03AW1111</code>.</p>
-            <button type="submit" class="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-sm transition">
-              Create Account &amp; Enter Parking Portal
+            <button type="submit" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition">
+              Create Account &amp; Enter Portal
             </button>
           </form>
 
-          <!-- Admin Login Form -->
-          <form id="adminLoginForm" class="hidden space-y-4 max-w-md mx-auto">
-            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-              Admin access unlocks live H2 database records, revenue KPIs, and the ANPR Camera Gate Scanner.
+          <!-- 4. RESET PASSWORD FORM -->
+          <form id="resetPasswordForm" class="hidden space-y-4">
+            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+              Verify your username and registered email or mobile number to set a new strong password.
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Admin Username</label>
-              <input id="adminUsername" type="text" value="admin" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Username</label>
+              <input id="resetUsername" type="text" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="e.g. user" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Admin Password</label>
-              <input id="adminPassword" type="password" value="admin123" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Registered Email or Mobile</label>
+              <input id="resetContact" type="text" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="user@easypark.com or 9876543210" />
             </div>
-            <button type="submit" class="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow-sm transition">
-              Sign In to Admin &amp; ANPR Console
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">New Password (1 Uppercase Required)</label>
+              <div class="relative">
+                <input id="resetNewPassword" type="password" required class="w-full px-3.5 py-2.5 pr-16 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="e.g. NewPass@123" />
+                <button type="button" data-toggle-pass="resetNewPassword" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-900">Show</button>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                <span id="resetRuleUpper" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">○ 1 Uppercase (A–Z)</span>
+                <span id="resetRuleLen" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">○ Min 6 characters</span>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-sm transition">
+              Update Password
             </button>
           </form>
         </div>
       </div>
     </section>
 
-    <!-- VIEW 2: USER / DRIVER PORTAL -->
-    <section id="userView" class="hidden space-y-6">
-      <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
-        <div>
-          <div class="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Driver Portal</div>
-          <h2 id="userGreeting" class="text-xl font-bold text-slate-900">Welcome</h2>
-          <p id="userMeta" class="text-sm text-slate-500">Plate: — • Vehicle: —</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" id="switch4WBtn" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white">
-            4-Wheeler (₹30/hr)
-          </button>
-          <button type="button" id="switch2WBtn" class="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">
-            2-Wheeler (₹20/hr)
-          </button>
-          <button type="button" id="refreshUserSlotsBtn" class="px-3.5 py-2 rounded-xl text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">
-            Refresh Slots
-          </button>
-        </div>
-      </div>
+    <!-- ========================================================= -->
+    <!-- VIEW 2: DRIVER / USER PORTAL (FULL-WIDTH SIDEBAR LAYOUT)  -->
+    <!-- ========================================================= -->
+    <section id="userView" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-8rem)]">
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div>
-              <h3 id="slotGridTitle" class="text-lg font-bold text-slate-900">4-Wheeler Parking Zones (A, B, C)</h3>
-              <p class="text-xs text-slate-500">Click any green available slot to select it for booking.</p>
-            </div>
-            <div class="flex items-center gap-3 text-xs font-medium">
-              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> Available</span>
-              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500"></span> Occupied</span>
-              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-indigo-600"></span> Selected</span>
-            </div>
+      <!-- User Sidebar -->
+      <aside class="lg:col-span-3 xl:col-span-2 bg-slate-900 text-slate-200 p-5 flex flex-col justify-between gap-6">
+        <div class="space-y-5">
+          <div class="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700">
+            <div class="text-[11px] uppercase tracking-wider text-emerald-400 font-bold">Driver Account</div>
+            <div id="userGreeting" class="font-bold text-white text-base mt-0.5 truncate">Welcome</div>
+            <div id="userMeta" class="text-xs text-slate-400 mt-1 break-all">Plate: —</div>
           </div>
-          <div id="userSlotGrid" class="grid grid-cols-3 sm:grid-cols-6 gap-3 max-h-[460px] overflow-y-auto pr-1"></div>
-        </div>
 
-        <div class="space-y-6">
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-            <h3 class="text-base font-bold text-slate-900">Book Selected Slot</h3>
-            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-sm space-y-1">
-              <div class="flex justify-between"><span class="text-slate-500">Selected Slot:</span> <strong id="selectedSlotLabel">None</strong></div>
-              <div class="flex justify-between"><span class="text-slate-500">Rate:</span> <strong id="selectedRateLabel">₹30/hr</strong></div>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Vehicle Plate Number</label>
-              <input id="bookingPlateInput" type="text" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="MH02AB1234" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Duration (Hours)</label>
-              <select id="bookingHoursSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="1">1 Hour</option>
-                <option value="2">2 Hours</option>
-                <option value="3">3 Hours</option>
-                <option value="4">4 Hours</option>
-                <option value="6">6 Hours</option>
-              </select>
-            </div>
-            <button id="confirmBookBtn" type="button" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-sm transition">
-              Book Slot &amp; Generate Ticket
+          <nav class="space-y-1.5">
+            <button type="button" data-user-panel="userSlotsPanel" class="user-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 text-white">
+              🅿️ Book Parking Slot
             </button>
+            <button type="button" data-user-panel="userCheckoutPanel" class="user-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">
+              💳 Active Ticket &amp; Pay
+            </button>
+            <button type="button" data-user-panel="userTariffPanel" class="user-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">
+              📋 Profile &amp; Tariff Rules
+            </button>
+          </nav>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-400 space-y-1">
+          <div class="text-slate-200 font-semibold">Live Rates</div>
+          <div>4-Wheeler: <strong class="text-emerald-400">₹30/hr</strong></div>
+          <div>2-Wheeler: <strong class="text-emerald-400">₹20/hr</strong></div>
+        </div>
+      </aside>
+
+      <!-- User Main Workspace -->
+      <div class="lg:col-span-9 xl:col-span-10 p-5 sm:p-8 space-y-6">
+
+        <!-- Panel A: Slot Booking -->
+        <div id="userSlotsPanel" class="user-panel space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900">Select &amp; Book a Parking Slot</h2>
+              <p class="text-sm text-slate-500">Live availability synced directly with Spring Boot &amp; H2 database.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" id="switch4WBtn" class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white">4-Wheeler (18)</button>
+              <button type="button" id="switch2WBtn" class="px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50">2-Wheeler (72)</button>
+              <button type="button" id="refreshUserSlotsBtn" class="px-3.5 py-2 rounded-xl text-sm font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100">Refresh</button>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
-            <h3 class="text-base font-bold text-slate-900">Active Ticket &amp; Checkout</h3>
-            <div id="activeTicketBox" class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">
-              No active ticket yet. Book a slot or check out an existing parked vehicle by plate number.
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 id="slotGridTitle" class="text-lg font-bold text-slate-900">4-Wheeler Zones (A1–C6)</h3>
+                <div class="flex items-center gap-4 text-xs font-semibold">
+                  <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> Available</span>
+                  <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500"></span> Occupied</span>
+                  <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-indigo-600"></span> Selected</span>
+                </div>
+              </div>
+              <div id="userSlotGrid" class="grid grid-cols-3 sm:grid-cols-6 gap-3 max-h-[520px] overflow-y-auto pr-1"></div>
             </div>
-            <div class="flex gap-2">
-              <input id="checkoutPlateInput" type="text" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm uppercase" placeholder="Plate to checkout" />
-              <button id="checkoutBtn" type="button" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
-                Calculate Bill
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 h-fit">
+              <h3 class="text-lg font-bold text-slate-900">Booking Summary</h3>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm space-y-2">
+                <div class="flex justify-between"><span class="text-slate-500">Selected Slot:</span> <strong id="selectedSlotLabel" class="text-indigo-700">None</strong></div>
+                <div class="flex justify-between"><span class="text-slate-500">Hourly Rate:</span> <strong id="selectedRateLabel">₹30/hr</strong></div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle Plate Number</label>
+                <input id="bookingPlateInput" type="text" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="MH02AB1234" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Duration</label>
+                <select id="bookingHoursSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                  <option value="1">1 Hour</option>
+                  <option value="2">2 Hours</option>
+                  <option value="3">3 Hours</option>
+                  <option value="4">4 Hours</option>
+                  <option value="6">6 Hours</option>
+                </select>
+              </div>
+              <button id="confirmBookBtn" type="button" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition">
+                Book Slot &amp; Generate Ticket
               </button>
             </div>
-            <div id="paymentPanel" class="hidden space-y-3 pt-2 border-t border-slate-200">
-              <div class="text-sm space-y-1 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-                <div class="flex justify-between"><span>Base Fee:</span> <strong id="billBaseFee">₹0</strong></div>
+          </div>
+        </div>
+
+        <!-- Panel B: Active Ticket & Checkout -->
+        <div id="userCheckoutPanel" class="user-panel hidden max-w-2xl space-y-6">
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">Active Ticket &amp; Exit Payment</h2>
+            <p class="text-sm text-slate-500">Calculate your parking fee and pay via UPI, Card, or Cash to release your slot.</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
+            <div id="activeTicketBox" class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+              No active ticket created in this session yet. Enter any parked vehicle plate below to calculate its exit bill.
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2.5">
+              <input id="checkoutPlateInput" type="text" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-sm uppercase" placeholder="Enter plate (e.g. MH02AB1234)" />
+              <button id="checkoutBtn" type="button" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold">
+                Calculate Exit Bill
+              </button>
+            </div>
+            <div id="paymentPanel" class="hidden space-y-4 pt-4 border-t border-slate-200">
+              <div class="text-sm space-y-1.5 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <div class="flex justify-between"><span>Base Parking Fee:</span> <strong id="billBaseFee">₹0</strong></div>
                 <div class="flex justify-between"><span>Late Fine:</span> <strong id="billLateFine">₹0</strong></div>
-                <div class="flex justify-between text-base font-bold text-emerald-900 pt-1 border-t border-emerald-200">
-                  <span>Total Due:</span> <span id="billTotalDue">₹0</span>
+                <div class="flex justify-between text-lg font-extrabold text-emerald-900 pt-2 border-t border-emerald-200">
+                  <span>Total Payable:</span> <span id="billTotalDue">₹0</span>
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Payment Method</label>
-                <div class="grid grid-cols-3 gap-2">
-                  <button type="button" data-pay-method="UPI" class="pay-method-btn py-2 rounded-lg text-xs font-semibold border border-emerald-600 bg-emerald-50 text-emerald-800">UPI</button>
-                  <button type="button" data-pay-method="CARD" class="pay-method-btn py-2 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700">CARD</button>
-                  <button type="button" data-pay-method="CASH" class="pay-method-btn py-2 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700">CASH</button>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Choose Payment Method</label>
+                <div class="grid grid-cols-3 gap-2.5">
+                  <button type="button" data-pay-method="UPI" class="pay-method-btn py-2.5 rounded-xl text-xs font-bold border-2 border-emerald-600 bg-emerald-50 text-emerald-800">UPI</button>
+                  <button type="button" data-pay-method="CARD" class="pay-method-btn py-2.5 rounded-xl text-xs font-bold border border-slate-300 bg-white text-slate-700">CARD</button>
+                  <button type="button" data-pay-method="CASH" class="pay-method-btn py-2.5 rounded-xl text-xs font-bold border border-slate-300 bg-white text-slate-700">CASH</button>
                 </div>
               </div>
-              <button id="payNowBtn" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm">
-                PAY NOW &amp; RELEASE SLOT
+              <div class="p-3 rounded-xl bg-blue-50 border border-blue-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-extrabold text-blue-900">Razorpay Payment Gateway</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900">TEST MODE</span>
+                </div>
+                <input id="razorpayKeyInput" type="text" class="w-full px-3 py-1.5 rounded-lg border border-blue-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Optional: rzp_test_xxxx (leave blank for built-in Test Checkout)" />
+              </div>
+              <button id="payNowBtn" type="button" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm">
+                Pay with Razorpay (Test Mode) &amp; Open Gate
               </button>
             </div>
           </div>
         </div>
+
+        <!-- Panel C: Profile & Tariff -->
+        <div id="userTariffPanel" class="user-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+            <h3 class="text-lg font-bold text-slate-900">My Profile Details</h3>
+            <div id="profileDetailsBox" class="text-sm text-slate-600 space-y-2"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+            <h3 class="text-lg font-bold text-slate-900">Parking Tariff &amp; Late Fine Rules</h3>
+            <ul class="text-sm text-slate-600 space-y-2">
+              <li><strong>4-Wheeler (Zones A, B, C — 18 slots):</strong> ₹30/hour, ₹70 late fine per 20-minute overstay block.</li>
+              <li><strong>2-Wheeler (Floors 1, 2, 3 — 72 slots):</strong> ₹20/hour, ₹50 late fine per 20-minute overstay block.</li>
+              <li><strong>Payment Modes:</strong> UPI, Credit/Debit Card, and Cash accepted at gate checkout.</li>
+            </ul>
+          </div>
+        </div>
+
       </div>
     </section>
 
-    <!-- VIEW 3: ADMIN + ANPR DASHBOARD -->
-    <section id="adminView" class="hidden space-y-6">
-      <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
-        <div>
-          <div class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">Admin Console</div>
-          <h2 class="text-xl font-bold text-slate-900">SmartPark Operations &amp; ANPR Gate</h2>
-          <p class="text-sm text-slate-500">Live H2 / Spring Boot monitoring, slot occupancy, payments, and camera plate recognition.</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="refreshAdminBtn" type="button" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">
-            Refresh Live Data
-          </button>
-        </div>
-      </div>
+    <!-- ========================================================= -->
+    <!-- VIEW 3: ADMIN + LIVE ANPR CONSOLE (FULL-WIDTH SIDEBAR)    -->
+    <!-- ========================================================= -->
+    <section id="adminView" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-8rem)]">
 
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div class="text-xs font-semibold text-slate-500 uppercase">Total Slots</div>
-          <div id="kpiTotalSlots" class="text-2xl font-extrabold text-slate-900 mt-1">90</div>
-          <div class="text-xs text-slate-500 mt-1">18 (4W) + 72 (2W)</div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div class="text-xs font-semibold text-slate-500 uppercase">Occupied</div>
-          <div id="kpiOccupied" class="text-2xl font-extrabold text-rose-600 mt-1">0</div>
-          <div class="text-xs text-slate-500 mt-1">Active parked vehicles</div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div class="text-xs font-semibold text-slate-500 uppercase">Available</div>
-          <div id="kpiAvailable" class="text-2xl font-extrabold text-emerald-600 mt-1">90</div>
-          <div class="text-xs text-slate-500 mt-1">Ready for entry</div>
-        </div>
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div class="text-xs font-semibold text-slate-500 uppercase">Total Revenue</div>
-          <div id="kpiRevenue" class="text-2xl font-extrabold text-indigo-600 mt-1">₹0</div>
-          <div class="text-xs text-slate-500 mt-1">Collected via UPI/Card/Cash</div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-slate-900">ANPR Camera Gate Scanner</h3>
-            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">YOLOv8 + Tesseract</span>
+      <!-- Admin Sidebar -->
+      <aside class="lg:col-span-3 xl:col-span-2 bg-slate-950 text-slate-200 p-5 flex flex-col justify-between gap-6">
+        <div class="space-y-5">
+          <div class="p-3.5 rounded-xl bg-indigo-950/60 border border-indigo-800/60">
+            <div class="text-[11px] uppercase tracking-wider text-indigo-300 font-bold">Administrator</div>
+            <div class="font-bold text-white text-base mt-0.5">SmartPark Ops</div>
+            <div class="text-xs text-slate-400 mt-1">Full H2 + ANPR Control</div>
           </div>
-          <p class="text-xs text-slate-500">
-            Upload a vehicle number plate image to call <code>POST /api/parking/anpr-scan</code>, or trigger an ANPR gate entry/exit directly with a plate number.
-          </p>
 
-          <form id="anprImageForm" class="space-y-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <label class="block text-xs font-semibold text-slate-700 uppercase">1. Upload Number Plate Image</label>
-            <input id="anprFileInput" type="file" accept="image/*" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800" />
-            <div class="flex items-center gap-2">
-              <select id="anprImageVehicleType" class="px-3 py-2 rounded-lg border border-slate-300 text-xs bg-white">
-                <option value="4 Wheeler">4 Wheeler</option>
-                <option value="2 Wheeler">2 Wheeler</option>
-              </select>
-              <button type="submit" class="flex-1 py-2 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
-                Scan Image &amp; Auto-Assign Slot
-              </button>
-            </div>
-          </form>
-
-          <form id="manualScanForm" class="space-y-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <label class="block text-xs font-semibold text-slate-700 uppercase">2. Direct Gate / ANPR Plate Trigger</label>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <input id="scanPlateInput" type="text" required class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm uppercase" placeholder="e.g. MH01ZZ9999" />
-              <select id="scanVehicleType" class="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white">
-                <option value="4 Wheeler">4 Wheeler</option>
-                <option value="2 Wheeler">2 Wheeler</option>
-              </select>
-              <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold">
-                Gate Scan
-              </button>
-            </div>
-          </form>
-
-          <div id="anprResultBox" class="hidden p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-950"></div>
+          <nav class="space-y-1.5">
+            <button type="button" data-admin-panel="adminOverviewPanel" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white">
+              📊 Dashboard &amp; KPIs
+            </button>
+            <button type="button" data-admin-panel="adminAnprPanel" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">
+              📷 ANPR Camera Gate
+            </button>
+            <button type="button" data-admin-panel="adminSlotsPanel" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">
+              🅿️ 90-Slot Live Map
+            </button>
+            <button type="button" data-admin-panel="adminRecordsPanel" class="admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">
+              🗄️ H2 Database Logs
+            </button>
+          </nav>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-bold text-slate-900">Admin Live Slot Monitor</h3>
-            <select id="adminSlotFilter" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-semibold">
-              <option value="4 Wheeler">4-Wheeler Zones (18)</option>
-              <option value="2 Wheeler">2-Wheeler Floors (72)</option>
+        <button id="refreshAdminBtn" type="button" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700">
+          ↻ Refresh Live Data
+        </button>
+      </aside>
+
+      <!-- Admin Workspace -->
+      <div class="lg:col-span-9 xl:col-span-10 p-5 sm:p-8 space-y-6">
+
+        <!-- KPI Strip (Always visible at top of Admin) -->
+        <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="text-xs font-bold text-slate-500 uppercase">Total Capacity</div>
+            <div id="kpiTotalSlots" class="text-3xl font-extrabold text-slate-900 mt-1">90</div>
+            <div class="text-xs text-slate-500 mt-1">18 (4W) + 72 (2W)</div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="text-xs font-bold text-slate-500 uppercase">Currently Parked</div>
+            <div id="kpiOccupied" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+            <div class="text-xs text-slate-500 mt-1">Active vehicles inside</div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="text-xs font-bold text-slate-500 uppercase">Available Slots</div>
+            <div id="kpiAvailable" class="text-3xl font-extrabold text-emerald-600 mt-1">90</div>
+            <div class="text-xs text-slate-500 mt-1">Ready for instant entry</div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+            <div class="text-xs font-bold text-slate-500 uppercase">Total Revenue</div>
+            <div id="kpiRevenue" class="text-3xl font-extrabold text-indigo-600 mt-1">₹0</div>
+            <div class="text-xs text-slate-500 mt-1">Collected fees</div>
+          </div>
+        </div>
+
+        <!-- Admin Panel 1: Overview (Shows ANPR + Records together for quick demo!) -->
+        <div id="adminOverviewPanel" class="admin-panel space-y-6">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+              <h3 class="text-lg font-bold text-slate-900">Quick Actions</h3>
+              <p class="text-sm text-slate-500">Jump straight to live ANPR image scanning, inspect all 90 parking slots, or manage H2 database entries.</p>
+              <div class="flex flex-wrap gap-2.5 pt-2">
+                <button type="button" data-jump-admin="adminAnprPanel" class="jump-admin-btn px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold">Open ANPR Camera Gate →</button>
+                <button type="button" data-jump-admin="adminRecordsPanel" class="jump-admin-btn px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold">View H2 Records →</button>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-2">
+              <h3 class="text-lg font-bold text-slate-900">System Architecture Status</h3>
+              <ul class="text-sm text-slate-600 space-y-1.5">
+                <li><strong>Slot Engine:</strong> Java <code>TreeSet</code> (O(log n) nearest slot) + <code>HashMap</code> active lookup.</li>
+                <li><strong>ANPR Pipeline:</strong> Local YOLOv8 FastAPI + Automatic Browser <strong>Tesseract.js OCR</strong> on Cloud/Render.</li>
+                <li><strong>Database:</strong> Embedded H2 SQL (<code>APP_USERS</code>, <code>PARKING_RECORDS</code>, <code>PAYMENTS</code>).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Panel 2: ANPR Camera Gate (LIVE OCR + Direct Trigger) -->
+        <div id="adminAnprPanel" class="admin-panel hidden grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <!-- Mode 1: Real Image Upload OCR -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-bold text-slate-900">1. Upload Number Plate Photo (Live OCR)</h3>
+              <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Works on Render!</span>
+            </div>
+            <p class="text-xs text-slate-500">
+              Upload any car or bike number plate image. Uses local YOLOv8 if running, or automatically runs <strong>Tesseract.js OCR</strong> right in your browser to extract the plate and log Entry/Exit in Spring Boot!
+            </p>
+            <form id="anprImageForm" class="space-y-3">
+              <input id="anprFileInput" type="file" accept="image/*" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800" />
+              <div id="anprPreviewWrap" class="hidden rounded-xl overflow-hidden border border-slate-200 bg-slate-50 p-2">
+                <img id="anprPreviewImg" alt="Uploaded number plate preview" class="max-h-44 mx-auto rounded-lg object-contain" />
+              </div>
+              <div id="ocrProgressWrap" class="hidden space-y-1">
+                <div class="flex justify-between text-xs font-semibold text-indigo-700">
+                  <span id="ocrStatusText">Reading plate with Tesseract OCR...</span>
+                  <span id="ocrPctText">0%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div id="ocrProgressBar" class="h-full bg-indigo-600 transition-all" style="width:0%"></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <select id="anprImageVehicleType" class="px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                  <option value="4 Wheeler">4 Wheeler</option>
+                  <option value="2 Wheeler">2 Wheeler</option>
+                </select>
+                <button id="anprScanBtn" type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-sm">
+                  Scan Plate Image &amp; Auto-Assign Slot
+                </button>
+              </div>
+            </form>
+            <div id="ocrRawBox" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600"></div>
+          </div>
+
+          <!-- Mode 2: Direct Gate Plate Trigger -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 class="text-lg font-bold text-slate-900">2. Direct Gate / Plate Entry &amp; Exit</h3>
+            <p class="text-xs text-slate-500">
+              Type or confirm a detected plate number and click <strong>Gate Scan</strong>. 1st scan assigns the nearest free slot (ENTRY); 2nd scan checks out the vehicle and computes charges (EXIT).
+            </p>
+            <form id="manualScanForm" class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Plate Number</label>
+                <input id="scanPlateInput" type="text" required class="w-full px-4 py-3 rounded-xl border border-slate-300 text-base font-mono font-bold uppercase focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="e.g. MH01ZZ9999" />
+              </div>
+              <div class="flex gap-2.5">
+                <select id="scanVehicleType" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold bg-white">
+                  <option value="4 Wheeler">4 Wheeler</option>
+                  <option value="2 Wheeler">2 Wheeler</option>
+                </select>
+                <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-sm">
+                  Trigger Gate Scan
+                </button>
+              </div>
+            </form>
+            <div id="anprResultBox" class="hidden p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-950 font-medium"></div>
+          </div>
+        </div>
+
+        <!-- Admin Panel 3: 90-Slot Live Monitor -->
+        <div id="adminSlotsPanel" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-bold text-slate-900">Live 90-Slot Monitor</h3>
+            <select id="adminSlotFilter" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white font-bold">
+              <option value="4 Wheeler">4-Wheeler Zones (18 Slots)</option>
+              <option value="2 Wheeler">2-Wheeler Floors (72 Slots)</option>
             </select>
           </div>
-          <div id="adminSlotGrid" class="grid grid-cols-3 sm:grid-cols-6 gap-2.5 max-h-[340px] overflow-y-auto pr-1"></div>
+          <div id="adminSlotGrid" class="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2.5 max-h-[480px] overflow-y-auto pr-1"></div>
         </div>
-      </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-bold text-slate-900">Live Parking Records (H2 Database)</h3>
-          <span class="text-xs text-slate-500">Click "Checkout &amp; Pay" on any active PARKED row to release the slot</span>
+        <!-- Admin Panel 4: H2 Database Records -->
+        <div id="adminRecordsPanel" class="admin-panel hidden bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900">Live Parking Records (H2 Database)</h3>
+              <p class="text-xs text-slate-500">Click "Checkout &amp; Pay" on any active PARKED row to compute charges and release the slot.</p>
+            </div>
+            <input id="adminSearchInput" type="text" placeholder="Search by plate or slot..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-sm w-full sm:w-64 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs uppercase text-slate-500 bg-slate-50">
+                  <th class="py-3 px-3">Ticket</th>
+                  <th class="py-3 px-3">Plate</th>
+                  <th class="py-3 px-3">Type</th>
+                  <th class="py-3 px-3">Slot</th>
+                  <th class="py-3 px-3">Status</th>
+                  <th class="py-3 px-3">Entry Time</th>
+                  <th class="py-3 px-3">Amount</th>
+                  <th class="py-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminRecordsBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-sm">
-            <thead>
-              <tr class="border-b border-slate-200 text-xs uppercase text-slate-500">
-                <th class="py-2.5 px-3">Ticket ID</th>
-                <th class="py-2.5 px-3">Plate</th>
-                <th class="py-2.5 px-3">Type</th>
-                <th class="py-2.5 px-3">Slot</th>
-                <th class="py-2.5 px-3">Status</th>
-                <th class="py-2.5 px-3">Entry Time</th>
-                <th class="py-2.5 px-3">Amount</th>
-                <th class="py-2.5 px-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="adminRecordsBody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
+
       </div>
     </section>
 
   </main>
 
-  <footer class="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
+  <!-- Razorpay Test Mode Checkout Modal -->
+  <div id="rzpModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-[#072654] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#3395FF] flex items-center justify-center font-black text-white text-lg">R</div>
+          <div>
+            <div class="font-extrabold text-base leading-tight">EasyPark SmartPay</div>
+            <div class="text-xs text-blue-200" id="rzpOrderMeta">Order #order_TEST</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-400 text-slate-950">TEST MODE</span>
+          <div id="rzpAmountDisplay" class="text-xl font-extrabold mt-0.5">₹30</div>
+        </div>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+          <button type="button" data-rzp-tab="upi" class="rzp-tab-btn py-2 rounded-lg text-xs font-bold bg-white text-blue-700 shadow-sm">UPI / QR</button>
+          <button type="button" data-rzp-tab="card" class="rzp-tab-btn py-2 rounded-lg text-xs font-semibold text-slate-600">Test Card</button>
+        </div>
+
+        <div id="rzpUpiPane" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Test UPI ID</label>
+            <input id="rzpUpiInput" type="text" value="success@razorpay" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <p class="text-[11px] text-slate-500 mt-1">Use <code>success@razorpay</code> for instant test approval.</p>
+          </div>
+        </div>
+
+        <div id="rzpCardPane" class="hidden space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Razorpay Test Card Number</label>
+            <input id="rzpCardInput" type="text" value="4111 1111 1111 1111" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Expiry</label>
+              <input id="rzpExpInput" type="text" value="12/29" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">CVV</label>
+              <input id="rzpCvvInput" type="password" value="123" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2.5 pt-2">
+          <button id="rzpCancelBtn" type="button" class="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50">Cancel</button>
+          <button id="rzpConfirmPayBtn" type="button" class="flex-1 py-3 rounded-xl bg-[#3395FF] hover:bg-blue-600 text-white text-sm font-extrabold shadow">
+            Confirm Test Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="border-t border-slate-200 bg-white py-3.5 text-center text-xs font-medium text-slate-500">
     Group 5 • Roll Nos: 112, 114, 116, 87, 120
   </footer>
 
@@ -384,18 +670,20 @@
     let selectedSlotZone = 'Zone A';
     let selectedPayMethod = 'UPI';
     let pendingCheckoutTicket = null;
+    let cachedAdminRecords = [];
 
     const demoState = {
       users: [
-        { username: 'admin', password: 'admin123', role: 'ADMIN', email: 'admin@easypark.com', vehicleType: '4 Wheeler', vehicleNumber: 'MH01AD0001' },
-        { username: 'user', password: 'user123', role: 'USER', email: 'user@easypark.com', vehicleType: '4 Wheeler', vehicleNumber: 'MH02AB1234' }
+        { username: 'admin', password: 'Admin@123', role: 'ADMIN', email: 'admin@easypark.com', phone: '9999999999', vehicleType: '4 Wheeler', vehicleNumber: 'MH01AD0001' },
+        { username: 'user', password: 'User@123', role: 'USER', email: 'user@easypark.com', phone: '9876543210', vehicleType: '4 Wheeler', vehicleNumber: 'MH02AB1234' }
       ],
       slots4W: ['A1','A2','A3','A4','A5','A6','B1','B2','B3','B4','B5','B6','C1','C2','C3','C4','C5','C6'],
       slots2W: Array.from({ length: 72 }, (_, i) => `F${Math.floor(i / 24) + 1}-${String((i % 24) + 1).padStart(2, '0')}`),
       records: [
-        { ticketId: 1, vehicleNumber: 'MH02AB1234', vehicleType: '4 Wheeler', slotId: 'A2', zone: 'Zone A', status: 'PARKED', entryTime: new Date().toLocaleTimeString(), charges: 30 }
+        { ticketId: 1, vehicleNumber: 'MH01XY1111', vehicleType: '4 Wheeler', slotId: 'A2', zone: 'Zone A', status: 'PARKED', entryTime: new Date().toLocaleTimeString(), charges: 0 },
+        { ticketId: 2, vehicleNumber: 'MH02CD2222', vehicleType: '4 Wheeler', slotId: 'B1', zone: 'Zone B', status: 'PARKED', entryTime: new Date().toLocaleTimeString(), charges: 0 }
       ],
-      nextTicketId: 2,
+      nextTicketId: 3,
       revenue: 120
     };
 
@@ -407,11 +695,60 @@
           ? 'bg-emerald-600 text-white'
           : 'bg-slate-900 text-white';
       const el = document.createElement('div');
-      el.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${colors}`;
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-sm font-semibold ${colors}`;
       el.textContent = msg;
       container.appendChild(el);
-      setTimeout(() => el.remove(), 3600);
+      setTimeout(() => el.remove(), 3800);
     }
+
+    function setAuthAlert(msg, type = 'error') {
+      const box = document.getElementById('authAlertBox');
+      if (!msg) {
+        box.classList.add('hidden');
+        return;
+      }
+      box.classList.remove('hidden');
+      box.className = type === 'success'
+        ? 'rounded-xl p-3.5 text-sm font-semibold border bg-emerald-50 border-emerald-200 text-emerald-800'
+        : 'rounded-xl p-3.5 text-sm font-semibold border bg-rose-50 border-rose-200 text-rose-800';
+      box.textContent = msg;
+    }
+
+    function isStrongPassword(pw) {
+      return typeof pw === 'string' && pw.length >= 6 && /[A-Z]/.test(pw);
+    }
+
+    function updatePasswordHints(pw, upperElId, lenElId) {
+      const hasUpper = /[A-Z]/.test(pw);
+      const hasLen = pw.length >= 6;
+      const uEl = document.getElementById(upperElId);
+      const lEl = document.getElementById(lenElId);
+      uEl.textContent = (hasUpper ? '✓ ' : '○ ') + '1 Uppercase (A–Z)';
+      uEl.className = hasUpper
+        ? 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold'
+        : 'px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium';
+      lEl.textContent = (hasLen ? '✓ ' : '○ ') + 'Min 6 characters';
+      lEl.className = hasLen
+        ? 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold'
+        : 'px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium';
+    }
+
+    document.getElementById('regPassword').addEventListener('input', (e) => {
+      updatePasswordHints(e.target.value, 'regRuleUpper', 'regRuleLen');
+    });
+    document.getElementById('resetNewPassword').addEventListener('input', (e) => {
+      updatePasswordHints(e.target.value, 'resetRuleUpper', 'resetRuleLen');
+    });
+
+    // Show/Hide password toggles
+    document.querySelectorAll('.toggle-pass-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.togglePass);
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        btn.textContent = isPass ? 'Hide' : 'Show';
+      });
+    });
 
     async function apiFetch(path, options = {}) {
       const res = await fetch(`${API_BASE}${path}`, options);
@@ -437,17 +774,66 @@
       }
     }
 
-    document.querySelectorAll('.auth-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.authTab;
-        document.querySelectorAll('.auth-tab-btn').forEach(b => {
-          b.className = 'auth-tab-btn py-3.5 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900';
-        });
-        btn.className = 'auth-tab-btn py-3.5 px-4 text-sm font-semibold border-b-2 border-emerald-600 text-emerald-700 bg-white';
-        document.getElementById('userLoginForm').classList.toggle('hidden', target !== 'userLogin');
-        document.getElementById('userSignupForm').classList.toggle('hidden', target !== 'userSignup');
-        document.getElementById('adminLoginForm').classList.toggle('hidden', target !== 'adminLogin');
+    // Auth Tab Switching
+    function switchAuthTab(target) {
+      setAuthAlert('');
+      document.querySelectorAll('.auth-tab-btn').forEach(b => {
+        const active = b.dataset.authTab === target;
+        b.className = active
+          ? 'auth-tab-btn py-2 px-2 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm'
+          : 'auth-tab-btn py-2 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900';
       });
+      document.getElementById('userLoginForm').classList.toggle('hidden', target !== 'userLogin');
+      document.getElementById('adminLoginForm').classList.toggle('hidden', target !== 'adminLogin');
+      document.getElementById('userSignupForm').classList.toggle('hidden', target !== 'userSignup');
+      document.getElementById('resetPasswordForm').classList.toggle('hidden', target !== 'resetPassword');
+
+      const headings = {
+        userLogin: ['Driver / User Sign In', 'Sign in with your username and password to book a slot.'],
+        adminLogin: ['Admin & ANPR Sign In', 'Authorized staff login for live database & gate control.'],
+        userSignup: ['Create New Driver Account', 'Password must include at least 1 uppercase letter (A–Z).'],
+        resetPassword: ['Reset Your Password', 'Verify your username and email/mobile to set a new password.']
+      };
+      document.getElementById('authHeading').textContent = headings[target][0];
+      document.getElementById('authSubheading').textContent = headings[target][1];
+    }
+
+    document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchAuthTab(btn.dataset.authTab));
+    });
+    document.getElementById('forgotFromUserBtn').addEventListener('click', () => switchAuthTab('resetPassword'));
+    document.getElementById('forgotFromAdminBtn').addEventListener('click', () => switchAuthTab('resetPassword'));
+
+    // Sidebar Panel Switchers
+    function switchUserPanel(panelId) {
+      document.querySelectorAll('.user-panel').forEach(p => p.classList.toggle('hidden', p.id !== panelId));
+      document.querySelectorAll('.user-nav-btn').forEach(b => {
+        const active = b.dataset.userPanel === panelId;
+        b.className = active
+          ? 'user-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 text-white'
+          : 'user-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800';
+      });
+    }
+    document.querySelectorAll('.user-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchUserPanel(btn.dataset.userPanel));
+    });
+
+    function switchAdminPanel(panelId) {
+      document.querySelectorAll('.admin-panel').forEach(p => p.classList.toggle('hidden', p.id !== panelId));
+      document.querySelectorAll('.admin-nav-btn').forEach(b => {
+        const active = b.dataset.adminPanel === panelId;
+        b.className = active
+          ? 'admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white'
+          : 'admin-nav-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800';
+      });
+      if (panelId === 'adminSlotsPanel') loadAdminSlots();
+      if (panelId === 'adminRecordsPanel') loadAdminSummary();
+    }
+    document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchAdminPanel(btn.dataset.adminPanel));
+    });
+    document.querySelectorAll('.jump-admin-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchAdminPanel(btn.dataset.jumpAdmin));
     });
 
     function enterPortal(user) {
@@ -456,20 +842,32 @@
       const vType = user.vehicleType || '4 Wheeler';
       document.getElementById('authView').classList.add('hidden');
       document.getElementById('navAuthBtn').classList.remove('hidden');
+      const pill = document.getElementById('navUserPill');
+      pill.textContent = `${user.username} (${user.role})`;
+      pill.classList.remove('hidden');
 
       if ((user.role || '').toUpperCase() === 'ADMIN') {
         document.getElementById('userView').classList.add('hidden');
         document.getElementById('adminView').classList.remove('hidden');
+        switchAdminPanel('adminAnprPanel');
         loadAdminDashboard();
       } else {
         document.getElementById('adminView').classList.add('hidden');
         document.getElementById('userView').classList.remove('hidden');
-        document.getElementById('userGreeting').textContent = `Welcome, ${user.username}`;
-        document.getElementById('userMeta').textContent = `Plate: ${plate || 'Not set'} • Vehicle: ${vType}`;
+        document.getElementById('userGreeting').textContent = user.username;
+        document.getElementById('userMeta').textContent = `Plate: ${plate || 'Not set'} • ${vType}`;
         document.getElementById('bookingPlateInput').value = plate;
         document.getElementById('checkoutPlateInput').value = plate;
+        document.getElementById('profileDetailsBox').innerHTML = `
+          <div><strong>Username:</strong> ${user.username}</div>
+          <div><strong>Email:</strong> ${user.email || '—'}</div>
+          <div><strong>Mobile:</strong> ${user.phone || '—'}</div>
+          <div><strong>Vehicle Type:</strong> ${vType}</div>
+          <div><strong>Registered Plate:</strong> <span class="font-mono font-bold">${plate || '—'}</span></div>
+        `;
         activeVehicleTab = vType.includes('2') ? '2 Wheeler' : '4 Wheeler';
         updateVehicleTabUI();
+        switchUserPanel('userSlotsPanel');
         loadUserSlots();
       }
     }
@@ -482,13 +880,17 @@
       document.getElementById('adminView').classList.add('hidden');
       document.getElementById('authView').classList.remove('hidden');
       document.getElementById('navAuthBtn').classList.add('hidden');
+      document.getElementById('navUserPill').classList.add('hidden');
+      setAuthAlert('');
       showToast('Signed out successfully.');
     });
 
+    // STRICT USER LOGIN (Wrong password = NO login)
     document.getElementById('userLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setAuthAlert('');
       const username = document.getElementById('loginUsername').value.trim();
-      const password = document.getElementById('loginPassword').value.trim();
+      const password = document.getElementById('loginPassword').value;
       try {
         if (backendOnline) {
           const res = await apiFetch('/login', {
@@ -496,22 +898,26 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
           });
-          enterPortal(res.user || res);
+          if (!res.success || !res.user) throw new Error(res.error || 'Invalid username or password.');
+          enterPortal(res.user);
         } else {
-          const found = demoState.users.find(u => u.username === username && u.password === password);
-          if (!found) throw new Error('Invalid username or password');
+          const found = demoState.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+          if (!found) throw new Error('Invalid username or password. Login denied.');
           enterPortal(found);
         }
-        showToast('Signed in!', 'success');
+        showToast('Signed in successfully!', 'success');
       } catch (err) {
+        setAuthAlert(err.message, 'error');
         showToast(err.message, 'error');
       }
     });
 
+    // STRICT ADMIN LOGIN (Wrong password = NO login)
     document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      setAuthAlert('');
       const username = document.getElementById('adminUsername').value.trim();
-      const password = document.getElementById('adminPassword').value.trim();
+      const password = document.getElementById('adminPassword').value;
       try {
         if (backendOnline) {
           const res = await apiFetch('/login', {
@@ -519,35 +925,42 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
           });
-          const user = res.user || res;
-          if ((user.role || '').toUpperCase() !== 'ADMIN') throw new Error('Admin privileges required');
-          enterPortal(user);
+          if (!res.success || !res.user) throw new Error(res.error || 'Invalid admin credentials.');
+          if ((res.user.role || '').toUpperCase() !== 'ADMIN') throw new Error('Access denied: Admin privileges required.');
+          enterPortal(res.user);
         } else {
-          const found = demoState.users.find(u => u.username === username && u.password === password && u.role === 'ADMIN');
-          if (!found) throw new Error('Invalid admin credentials');
+          const found = demoState.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password && u.role === 'ADMIN');
+          if (!found) throw new Error('Invalid admin username or password. Login denied.');
           enterPortal(found);
         }
-        showToast('Admin console unlocked.', 'success');
+        showToast('Admin Console unlocked!', 'success');
       } catch (err) {
+        setAuthAlert(err.message, 'error');
         showToast(err.message, 'error');
       }
     });
 
+    // SIGN UP (Requires 1 Uppercase + Min 6 chars)
     document.getElementById('userSignupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('regEmail').value.trim();
+      setAuthAlert('');
       const username = document.getElementById('regUsername').value.trim();
-      const password = document.getElementById('regPassword').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
       const phone = document.getElementById('regPhone').value.trim();
       const vehicleType = document.getElementById('regVehicleType').value;
       const vehicleNumber = document.getElementById('regPlate').value.trim().toUpperCase();
+      const password = document.getElementById('regPassword').value;
 
       if (!/^[6-9]\d{9}$/.test(phone)) {
-        showToast('Enter a valid 10-digit Indian mobile number.', 'error');
+        setAuthAlert('Enter a valid 10-digit Indian mobile number starting with 6–9.', 'error');
         return;
       }
       if (!/^[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{1,4}$/.test(vehicleNumber)) {
-        showToast('Enter a valid plate number like MH03AW1111.', 'error');
+        setAuthAlert('Enter a valid Indian plate number like MH03AW1111.', 'error');
+        return;
+      }
+      if (!isStrongPassword(password)) {
+        setAuthAlert('Password must be at least 6 characters and contain at least 1 uppercase letter (A–Z).', 'error');
         return;
       }
 
@@ -558,25 +971,63 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, phone, password, role: 'USER', vehicleType, vehicleNumber })
           });
-          enterPortal(res.user || { username, email, vehicleType, vehicleNumber, role: 'USER' });
+          enterPortal(res.user || { username, email, phone, vehicleType, vehicleNumber, role: 'USER' });
         } else {
-          if (demoState.users.some(u => u.username === username)) throw new Error('Username already exists');
+          if (demoState.users.some(u => u.username.toLowerCase() === username.toLowerCase())) throw new Error('Username already exists.');
           const newUser = { username, password, email, phone, vehicleType, vehicleNumber, role: 'USER' };
           demoState.users.push(newUser);
           enterPortal(newUser);
         }
-        showToast('Account created & logged in!', 'success');
+        showToast('Account created & signed in!', 'success');
       } catch (err) {
-        showToast(err.message, 'error');
+        setAuthAlert(err.message, 'error');
       }
     });
 
+    // RESET PASSWORD (Requires 1 Uppercase + Min 6 chars)
+    document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setAuthAlert('');
+      const username = document.getElementById('resetUsername').value.trim();
+      const emailOrPhone = document.getElementById('resetContact').value.trim();
+      const newPassword = document.getElementById('resetNewPassword').value;
+
+      if (!isStrongPassword(newPassword)) {
+        setAuthAlert('New password must be at least 6 characters and contain at least 1 uppercase letter (A–Z).', 'error');
+        return;
+      }
+
+      try {
+        if (backendOnline) {
+          const res = await apiFetch('/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, emailOrPhone, newPassword })
+          });
+          setAuthAlert(res.message || 'Password updated! Sign in with your new password.', 'success');
+        } else {
+          const u = demoState.users.find(x => x.username.toLowerCase() === username.toLowerCase() && (x.email.toLowerCase() === emailOrPhone.toLowerCase() || x.phone === emailOrPhone));
+          if (!u) throw new Error('No matching account found for that username and email/mobile.');
+          u.password = newPassword;
+          setAuthAlert('Password reset successful! Sign in now with your new password.', 'success');
+        }
+        document.getElementById('resetPasswordForm').reset();
+        updatePasswordHints('', 'resetRuleUpper', 'resetRuleLen');
+        showToast('Password updated!', 'success');
+      } catch (err) {
+        setAuthAlert(err.message, 'error');
+      }
+    });
+
+    // =========================================================
+    // DRIVER PORTAL LOGIC
+    // =========================================================
     function updateVehicleTabUI() {
       const b4 = document.getElementById('switch4WBtn');
       const b2 = document.getElementById('switch2WBtn');
       const is4 = activeVehicleTab === '4 Wheeler';
-      b4.className = is4 ? 'px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white' : 'px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200';
-      b2.className = !is4 ? 'px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white' : 'px-4 py-2 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200';
+      b4.className = is4 ? 'px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white' : 'px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50';
+      b2.className = !is4 ? 'px-4 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white' : 'px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-50';
       document.getElementById('slotGridTitle').textContent = is4 ? '4-Wheeler Parking Zones (A1–C6 • 18 Slots)' : '2-Wheeler Parking Floors (F1-01–F3-24 • 72 Slots)';
       document.getElementById('selectedRateLabel').textContent = is4 ? '₹30/hr' : '₹20/hr';
     }
@@ -588,7 +1039,6 @@
       updateVehicleTabUI();
       loadUserSlots();
     });
-
     document.getElementById('switch2WBtn').addEventListener('click', () => {
       activeVehicleTab = '2 Wheeler';
       selectedSlotId = null;
@@ -596,7 +1046,6 @@
       updateVehicleTabUI();
       loadUserSlots();
     });
-
     document.getElementById('refreshUserSlotsBtn').addEventListener('click', loadUserSlots);
 
     async function getSlotsData(vType) {
@@ -655,54 +1104,33 @@
       const rate = activeVehicleTab === '2 Wheeler' ? 20 : 30;
       const estimatedFee = rate * hours;
 
-      if (!selectedSlotId) {
-        showToast('Please click a green available slot first.', 'error');
-        return;
-      }
-      if (!vehicleNumber) {
-        showToast('Please enter your vehicle plate number.', 'error');
-        return;
-      }
+      if (!selectedSlotId) { showToast('Click a green available slot first.', 'error'); return; }
+      if (!vehicleNumber) { showToast('Enter your vehicle plate number.', 'error'); return; }
       try {
         let ticket;
         if (backendOnline) {
           const res = await apiFetch('/book', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vehicleNumber,
-              vehicleType: activeVehicleTab,
-              slotId: selectedSlotId,
-              zone: selectedSlotZone,
-              estimatedFee
-            })
+            body: JSON.stringify({ vehicleNumber, vehicleType: activeVehicleTab, slotId: selectedSlotId, zone: selectedSlotZone, estimatedFee })
           });
           ticket = res.ticket || res;
         } else {
-          ticket = {
-            ticketId: demoState.nextTicketId++,
-            vehicleNumber,
-            vehicleType: activeVehicleTab,
-            slotId: selectedSlotId,
-            zone: selectedSlotZone,
-            status: 'PARKED',
-            entryTime: new Date().toLocaleTimeString(),
-            charges: estimatedFee
-          };
+          ticket = { ticketId: demoState.nextTicketId++, vehicleNumber, vehicleType: activeVehicleTab, slotId: selectedSlotId, zone: selectedSlotZone, status: 'PARKED', entryTime: new Date().toLocaleTimeString(), charges: estimatedFee };
           demoState.records.unshift(ticket);
         }
         document.getElementById('checkoutPlateInput').value = vehicleNumber;
         document.getElementById('activeTicketBox').innerHTML = `
           <div class="space-y-1 text-slate-800">
             <div><strong>Ticket #${ticket.ticketId}</strong> • Slot <strong>${ticket.slotId}</strong> (${ticket.zone || selectedSlotZone})</div>
-            <div>Plate: <strong>${ticket.vehicleNumber}</strong> (${ticket.vehicleType})</div>
-            <div class="text-xs text-emerald-700 font-semibold">Status: ${ticket.status} • Est. ₹${estimatedFee}</div>
+            <div>Plate: <strong class="font-mono">${ticket.vehicleNumber}</strong> (${ticket.vehicleType})</div>
+            <div class="text-xs text-emerald-700 font-bold">Status: ${ticket.status} • Estimated ₹${estimatedFee}</div>
           </div>
         `;
         selectedSlotId = null;
         document.getElementById('selectedSlotLabel').textContent = 'None';
         await loadUserSlots();
-        showToast(`Slot ${ticket.slotId} booked for ${vehicleNumber}!`, 'success');
+        showToast(`Booked Slot ${ticket.slotId} for ${vehicleNumber}!`, 'success');
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -710,10 +1138,7 @@
 
     document.getElementById('checkoutBtn').addEventListener('click', async () => {
       const vehicleNumber = document.getElementById('checkoutPlateInput').value.trim().toUpperCase();
-      if (!vehicleNumber) {
-        showToast('Enter a plate number to calculate bill.', 'error');
-        return;
-      }
+      if (!vehicleNumber) { showToast('Enter a plate number to calculate bill.', 'error'); return; }
       try {
         let ticket;
         if (backendOnline) {
@@ -737,7 +1162,7 @@
         document.getElementById('billTotalDue').textContent = `₹${fee}`;
         document.getElementById('paymentPanel').classList.remove('hidden');
         await loadUserSlots();
-        showToast(`Checkout calculated: ₹${fee}. Select payment method.`, 'info');
+        showToast(`Exit bill calculated: ₹${fee}`, 'info');
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -747,42 +1172,121 @@
       btn.addEventListener('click', () => {
         selectedPayMethod = btn.dataset.payMethod;
         document.querySelectorAll('.pay-method-btn').forEach(b => {
-          b.className = 'pay-method-btn py-2 rounded-lg text-xs font-semibold border border-slate-300 bg-white text-slate-700';
+          b.className = 'pay-method-btn py-2.5 rounded-xl text-xs font-bold border border-slate-300 bg-white text-slate-700';
         });
-        btn.className = 'pay-method-btn py-2 rounded-lg text-xs font-semibold border border-emerald-600 bg-emerald-50 text-emerald-800';
+        btn.className = 'pay-method-btn py-2.5 rounded-xl text-xs font-bold border-2 border-emerald-600 bg-emerald-50 text-emerald-800';
       });
+    });
+
+    async function finalizeParkingPayment(methodLabel, txnId) {
+      if (!pendingCheckoutTicket) return;
+      const { ticketId, vehicleNumber, amount } = pendingCheckoutTicket;
+      if (backendOnline) {
+        await apiFetch('/pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticketId, vehicleNumber, amount, paymentMethod: methodLabel })
+        });
+      } else {
+        demoState.revenue += amount;
+      }
+      document.getElementById('paymentPanel').classList.add('hidden');
+      document.getElementById('activeTicketBox').innerHTML = `
+        <div class="space-y-1 text-emerald-900">
+          <div class="font-bold">✅ Payment Successful (Razorpay Test Mode)</div>
+          <div>Amount: <strong>₹${amount}</strong> • Method: <strong>${methodLabel}</strong></div>
+          <div class="text-xs font-mono text-slate-600">Txn ID: ${txnId} • Plate: ${vehicleNumber}</div>
+        </div>
+      `;
+      pendingCheckoutTicket = null;
+      await loadUserSlots();
+      showToast(`Payment ₹${amount} successful (${txnId})! Exit gate opened.`, 'success');
+    }
+
+    document.querySelectorAll('.rzp-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.rzpTab;
+        document.querySelectorAll('.rzp-tab-btn').forEach(b => {
+          b.className = b.dataset.rzpTab === tab
+            ? 'rzp-tab-btn py-2 rounded-lg text-xs font-bold bg-white text-blue-700 shadow-sm'
+            : 'rzp-tab-btn py-2 rounded-lg text-xs font-semibold text-slate-600';
+        });
+        document.getElementById('rzpUpiPane').classList.toggle('hidden', tab !== 'upi');
+        document.getElementById('rzpCardPane').classList.toggle('hidden', tab !== 'card');
+      });
+    });
+
+    document.getElementById('rzpCancelBtn').addEventListener('click', () => {
+      document.getElementById('rzpModal').classList.add('hidden');
+      showToast('Razorpay Test payment cancelled.', 'info');
+    });
+
+    document.getElementById('rzpConfirmPayBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('rzpConfirmPayBtn');
+      btn.disabled = true;
+      btn.textContent = 'Processing Test Payment...';
+      try {
+        const isCard = !document.getElementById('rzpCardPane').classList.contains('hidden');
+        const methodLabel = isCard ? 'RAZORPAY_TEST_CARD' : 'RAZORPAY_TEST_UPI';
+        const txnId = 'pay_TEST_' + Date.now().toString().slice(-8);
+        await new Promise(r => setTimeout(r, 650));
+        document.getElementById('rzpModal').classList.add('hidden');
+        await finalizeParkingPayment(methodLabel, txnId);
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirm Test Payment';
+      }
     });
 
     document.getElementById('payNowBtn').addEventListener('click', async () => {
       if (!pendingCheckoutTicket) return;
+      const { vehicleNumber, amount } = pendingCheckoutTicket;
       try {
-        const { ticketId, vehicleNumber, amount } = pendingCheckoutTicket;
-        if (backendOnline) {
-          await apiFetch('/pay', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ticketId,
-              vehicleNumber,
-              amount,
-              paymentMethod: selectedPayMethod
-            })
-          });
-        } else {
-          demoState.revenue += amount;
+        if (selectedPayMethod === 'CASH') {
+          await finalizeParkingPayment('CASH', 'CASH_' + Date.now().toString().slice(-6));
+          return;
         }
-        document.getElementById('paymentPanel').classList.add('hidden');
-        document.getElementById('activeTicketBox').textContent = `Paid ₹${amount} via ${selectedPayMethod} for ${vehicleNumber}. Slot released!`;
-        pendingCheckoutTicket = null;
-        await loadUserSlots();
-        showToast('Payment recorded! Gate opened.', 'success');
+        const customKey = (document.getElementById('razorpayKeyInput').value || '').trim();
+        if (customKey.startsWith('rzp_test_') && typeof Razorpay !== 'undefined') {
+          const rzp = new Razorpay({
+            key: customKey,
+            amount: Math.round(amount * 100),
+            currency: 'INR',
+            name: 'EasyPark & SmartPark',
+            description: `Parking Fee for ${vehicleNumber}`,
+            prefill: { name: currentUser?.username || 'Driver', email: currentUser?.email || 'user@easypark.com', contact: currentUser?.phone || '9876543210' },
+            theme: { color: '#072654' },
+            handler: async (resp) => {
+              await finalizeParkingPayment(`RAZORPAY_${selectedPayMethod}`, resp.razorpay_payment_id || ('pay_TEST_' + Date.now()));
+            }
+          });
+          rzp.open();
+          return;
+        }
+        // Built-in Razorpay Test Mode Checkout Modal (works immediately with zero key setup)
+        document.getElementById('rzpOrderMeta').textContent = `Order #order_TEST_${Date.now().toString().slice(-6)} • ${vehicleNumber}`;
+        document.getElementById('rzpAmountDisplay').textContent = `₹${amount}`;
+        document.getElementById('rzpModal').classList.remove('hidden');
       } catch (err) {
         showToast(err.message, 'error');
       }
     });
 
+    // =========================================================
+    // ADMIN + LIVE ANPR OCR LOGIC
+    // =========================================================
     document.getElementById('refreshAdminBtn').addEventListener('click', loadAdminDashboard);
     document.getElementById('adminSlotFilter').addEventListener('change', loadAdminSlots);
+    document.getElementById('adminSearchInput').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toUpperCase();
+      const filtered = cachedAdminRecords.filter(r =>
+        String(r.vehicleNumber || '').toUpperCase().includes(q) ||
+        String(r.slotId || '').toUpperCase().includes(q)
+      );
+      renderAdminRecords(filtered);
+    });
 
     async function loadAdminDashboard() {
       await Promise.all([loadAdminSummary(), loadAdminSlots()]);
@@ -799,14 +1303,16 @@
           document.getElementById('kpiOccupied').textContent = occ;
           document.getElementById('kpiAvailable').textContent = avail4 + avail2;
           document.getElementById('kpiRevenue').textContent = `₹${s.totalRevenue ?? 0}`;
-          renderAdminRecords(s.records || []);
+          cachedAdminRecords = s.records || [];
+          renderAdminRecords(cachedAdminRecords);
         } else {
           const occ = demoState.records.filter(r => r.status === 'PARKED').length;
           document.getElementById('kpiTotalSlots').textContent = 90;
           document.getElementById('kpiOccupied').textContent = occ;
           document.getElementById('kpiAvailable').textContent = 90 - occ;
           document.getElementById('kpiRevenue').textContent = `₹${demoState.revenue}`;
-          renderAdminRecords(demoState.records);
+          cachedAdminRecords = demoState.records;
+          renderAdminRecords(cachedAdminRecords);
         }
       } catch (err) {
         showToast(err.message, 'error');
@@ -836,7 +1342,7 @@
       const tbody = document.getElementById('adminRecordsBody');
       tbody.innerHTML = '';
       if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">No parking records yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">No matching parking records.</td></tr>';
         return;
       }
       list.forEach(r => {
@@ -846,25 +1352,25 @@
         const entryStr = r.entryTime ? String(r.entryTime).replace('T', ' ').slice(0, 19) : '—';
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="py-2.5 px-3 font-semibold">#${id}</td>
-          <td class="py-2.5 px-3 font-mono font-bold">${plate}</td>
-          <td class="py-2.5 px-3">${r.vehicleType}</td>
-          <td class="py-2.5 px-3 font-semibold">${r.slotId}</td>
-          <td class="py-2.5 px-3">
-            <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${isActive ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+          <td class="py-3 px-3 font-semibold">#${id}</td>
+          <td class="py-3 px-3 font-mono font-bold">${plate}</td>
+          <td class="py-3 px-3">${r.vehicleType}</td>
+          <td class="py-3 px-3 font-semibold">${r.slotId}</td>
+          <td class="py-3 px-3">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${isActive ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
               ${r.status}
             </span>
           </td>
-          <td class="py-2.5 px-3 text-xs text-slate-500">${entryStr}</td>
-          <td class="py-2.5 px-3 font-semibold">₹${r.charges ?? 0}</td>
-          <td class="py-2.5 px-3 text-right"></td>
+          <td class="py-3 px-3 text-xs text-slate-500">${entryStr}</td>
+          <td class="py-3 px-3 font-semibold">₹${r.charges ?? 0}</td>
+          <td class="py-3 px-3 text-right"></td>
         `;
         const actionTd = tr.lastElementChild;
         if (isActive) {
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.textContent = 'Checkout & Pay';
-          btn.className = 'px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold';
+          btn.className = 'px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold';
           btn.addEventListener('click', async () => {
             try {
               if (backendOnline) {
@@ -877,12 +1383,7 @@
                 await apiFetch('/pay', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    ticketId: ticket.ticketId || id,
-                    vehicleNumber: plate,
-                    amount: ticket.charges || 30,
-                    paymentMethod: 'CASH'
-                  })
+                  body: JSON.stringify({ ticketId: ticket.ticketId || id, vehicleNumber: plate, amount: ticket.charges || 30, paymentMethod: 'CASH' })
                 });
               } else {
                 r.status = 'EXITED';
@@ -902,30 +1403,137 @@
       });
     }
 
+    // Show uploaded plate image preview
+    document.getElementById('anprFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const wrap = document.getElementById('anprPreviewWrap');
+      const img = document.getElementById('anprPreviewImg');
+      if (file) {
+        img.src = URL.createObjectURL(file);
+        wrap.classList.remove('hidden');
+      } else {
+        wrap.classList.add('hidden');
+      }
+    });
+
+    async function executeGateScan(plate, vType) {
+      const box = document.getElementById('anprResultBox');
+      let data;
+      if (backendOnline) {
+        data = await apiFetch('/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plateNumber: plate, vehicleType: vType })
+        });
+      } else {
+        const existing = demoState.records.find(r => r.vehicleNumber === plate && r.status === 'PARKED');
+        if (existing) {
+          existing.status = 'EXITED';
+          existing.charges = existing.vehicleType === '2 Wheeler' ? 20 : 30;
+          demoState.revenue += existing.charges;
+          data = { action: 'EXIT', message: `ANPR Exit: Slot ${existing.slotId} freed. Fee: ₹${existing.charges}`, ticket: existing };
+        } else {
+          const pool = vType === '2 Wheeler' ? demoState.slots2W : demoState.slots4W;
+          const occ = new Set(demoState.records.filter(r => r.status === 'PARKED').map(r => r.slotId));
+          const freeSlot = pool.find(s => !occ.has(s));
+          if (!freeSlot) throw new Error('Parking Full!');
+          const rec = { ticketId: demoState.nextTicketId++, vehicleNumber: plate, vehicleType: vType, slotId: freeSlot, zone: vType === '2 Wheeler' ? 'Floor 1' : 'Zone A', status: 'PARKED', entryTime: new Date().toLocaleTimeString(), charges: 0 };
+          demoState.records.unshift(rec);
+          data = { action: 'ENTRY', message: `ANPR Entry: Assigned Slot ${freeSlot} to ${plate}`, ticket: rec };
+        }
+      }
+      box.classList.remove('hidden');
+      box.innerHTML = `<strong>Gate ${data.action || 'SCAN'}:</strong> ${data.message}`;
+      showToast(data.message, 'success');
+      await loadAdminDashboard();
+    }
+
+    // LIVE IMAGE ANPR: Tries local Python YOLOv8 first, then automatically runs Browser Tesseract.js OCR!
     document.getElementById('anprImageForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fileInput = document.getElementById('anprFileInput');
       const vType = document.getElementById('anprImageVehicleType').value;
-      const box = document.getElementById('anprResultBox');
+      const rawBox = document.getElementById('ocrRawBox');
+      const progWrap = document.getElementById('ocrProgressWrap');
+      const progBar = document.getElementById('ocrProgressBar');
+      const progPct = document.getElementById('ocrPctText');
+      const statusTxt = document.getElementById('ocrStatusText');
+      const scanBtn = document.getElementById('anprScanBtn');
+
       if (!fileInput.files.length) {
-        showToast('Choose a plate image first.', 'error');
+        showToast('Please select a number plate image first.', 'error');
         return;
       }
+
+      const file = fileInput.files[0];
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Scanning Plate...';
+      rawBox.classList.add('hidden');
+
       try {
-        if (!backendOnline) throw new Error('Image ANPR requires Spring Boot + FastAPI ANPR running locally.');
-        const fd = new FormData();
-        fd.append('file', fileInput.files[0]);
-        fd.append('vehicleType', vType);
-        const res = await fetch(`${API_BASE}/anpr-scan`, { method: 'POST', body: fd });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || data.message || 'ANPR scan failed');
-        const t = data.ticket || {};
-        box.classList.remove('hidden');
-        box.innerHTML = `<strong>ANPR ${data.action || 'SCAN'}:</strong> ${data.message || `Plate ${data.plateNumber} → Slot ${t.slotId}`}`;
-        showToast(data.message || `ANPR Matched ${data.plateNumber}`, 'success');
-        loadAdminDashboard();
+        // 1. Try local Spring Boot -> Python FastAPI YOLOv8 bridge first
+        if (backendOnline) {
+          try {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('vehicleType', vType);
+            const res = await fetch(`${API_BASE}/anpr-scan`, { method: 'POST', body: fd });
+            if (res.ok) {
+              const data = await res.json();
+              const box = document.getElementById('anprResultBox');
+              box.classList.remove('hidden');
+              box.innerHTML = `<strong>YOLOv8 ANPR ${data.action || 'SCAN'}:</strong> ${data.message}`;
+              showToast(data.message, 'success');
+              await loadAdminDashboard();
+              return;
+            }
+          } catch {
+            // Fall through to live browser Tesseract.js OCR
+          }
+        }
+
+        // 2. Automatic Live Browser OCR via Tesseract.js (works 100% on Render!)
+        if (typeof Tesseract === 'undefined') {
+          throw new Error('OCR engine still loading. Please try again or use Direct Gate Scan.');
+        }
+
+        progWrap.classList.remove('hidden');
+        progBar.style.width = '10%';
+        progPct.textContent = '10%';
+        statusTxt.textContent = 'Running Tesseract.js OCR on plate image...';
+
+        const result = await Tesseract.recognize(file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+              const p = Math.max(15, Math.round(m.progress * 100));
+              progBar.style.width = `${p}%`;
+              progPct.textContent = `${p}%`;
+            }
+          }
+        });
+
+        const rawText = (result.data.text || '').toUpperCase();
+        const cleaned = rawText.replace(/[^A-Z0-9]/g, '');
+        const plateMatch = cleaned.match(/[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{1,4}/) || cleaned.match(/[A-Z0-9]{6,11}/);
+
+        rawBox.classList.remove('hidden');
+        rawBox.innerHTML = `<strong>OCR Raw Read:</strong> <code>${rawText.trim() || 'No clear text'}</code>`;
+
+        if (plateMatch) {
+          const detectedPlate = plateMatch[0];
+          document.getElementById('scanPlateInput').value = detectedPlate;
+          document.getElementById('scanVehicleType').value = vType;
+          statusTxt.textContent = `Detected Plate: ${detectedPlate} — Assigning Slot...`;
+          await executeGateScan(detectedPlate, vType);
+        } else {
+          showToast('Image was blurry—type the plate in Box 2 to complete Gate Scan.', 'error');
+        }
       } catch (err) {
         showToast(err.message, 'error');
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Scan Plate Image & Auto-Assign Slot';
+        setTimeout(() => progWrap.classList.add('hidden'), 1800);
       }
     });
 
@@ -933,38 +1541,9 @@
       e.preventDefault();
       const plate = document.getElementById('scanPlateInput').value.trim().toUpperCase();
       const vType = document.getElementById('scanVehicleType').value;
-      const box = document.getElementById('anprResultBox');
       try {
-        let data;
-        if (backendOnline) {
-          data = await apiFetch('/scan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plateNumber: plate, vehicleType: vType })
-          });
-        } else {
-          const pool = vType === '2 Wheeler' ? demoState.slots2W : demoState.slots4W;
-          const occ = new Set(demoState.records.filter(r => r.status === 'PARKED').map(r => r.slotId));
-          const freeSlot = pool.find(s => !occ.has(s));
-          if (!freeSlot) throw new Error('Parking Full!');
-          const rec = {
-            ticketId: demoState.nextTicketId++,
-            vehicleNumber: plate,
-            vehicleType: vType,
-            slotId: freeSlot,
-            zone: vType === '2 Wheeler' ? 'Floor 1' : 'Zone A',
-            status: 'PARKED',
-            entryTime: new Date().toLocaleTimeString(),
-            charges: vType === '2 Wheeler' ? 20 : 30
-          };
-          demoState.records.unshift(rec);
-          data = { action: 'ENTRY', message: `ANPR Entry: Assigned Slot ${freeSlot} to ${plate}`, ticket: rec };
-        }
-        box.classList.remove('hidden');
-        box.innerHTML = `<strong>Gate ${data.action || 'SCAN'}:</strong> ${data.message}`;
+        await executeGateScan(plate, vType);
         document.getElementById('scanPlateInput').value = '';
-        showToast(data.message, 'success');
-        loadAdminDashboard();
       } catch (err) {
         showToast(err.message, 'error');
       }

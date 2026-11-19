@@ -152,11 +152,11 @@ class ParkingRepository {
 
         jdbcTemplate.update(
                 "INSERT INTO app_users (username, email, phone, user_password, user_role, vehicle_type, vehicle_number) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                "admin", "admin@easypark.com", "9999999999", "admin123", "ADMIN", null, null
+                "admin", "admin@easypark.com", "9999999999", "Admin@123", "ADMIN", null, null
         );
         jdbcTemplate.update(
                 "INSERT INTO app_users (username, email, phone, user_password, user_role, vehicle_type, vehicle_number) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                "user", "user@easypark.com", "9876543210", "user123", "USER", "4 Wheeler", "MH02AB1234"
+                "user", "user@easypark.com", "9876543210", "User@123", "USER", "4 Wheeler", "MH02AB1234"
         );
 
         LocalDateTime now = LocalDateTime.now();
@@ -209,6 +209,13 @@ class ParkingRepository {
 
         int id = keyHolder.getKey() != null ? keyHolder.getKey().intValue() : 0;
         return new AppUser(id, username.trim(), email, phone, cleanRole, vehicleType, cleanPlate);
+    }
+
+    public boolean resetUserPassword(String username, String emailOrPhone, String newPassword) {
+        String sql = "UPDATE app_users SET user_password = ? WHERE LOWER(username) = LOWER(?) AND (LOWER(email) = LOWER(?) OR phone = ?)";
+        String idCheck = emailOrPhone != null ? emailOrPhone.trim() : "";
+        int updated = jdbcTemplate.update(sql, newPassword, username.trim(), idCheck, idCheck);
+        return updated > 0;
     }
 
     public ParkingTicket saveEntry(ParkingTicket ticket) {
@@ -344,6 +351,26 @@ class ParkingController {
             res.put("message", "Registration Successful! Welcome to EasyPark.");
             res.put("user", newUser);
             return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, Object>> resetPassword(@RequestBody Map<String, String> body) {
+        try {
+            parkingService.resetPassword(
+                    body.get("username"),
+                    body.getOrDefault("emailOrPhone", body.getOrDefault("email", body.get("phone"))),
+                    body.get("newPassword")
+            );
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Password reset successful! You can now sign in with your new password."
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
@@ -542,15 +569,36 @@ class ParkingService {
         return repository.authenticateUser(username, password);
     }
 
+    private void validateStrongPassword(String password) {
+        if (password == null || password.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters long.");
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            throw new IllegalArgumentException("Password must contain at least 1 uppercase letter (A-Z).");
+        }
+    }
+
     public AppUser registerUser(String username, String email, String phone, String password,
                                 String role, String vehicleType, String vehicleNumber) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             throw new IllegalArgumentException("Username and password are required.");
         }
+        validateStrongPassword(password);
         if (repository.existsByUsernameOrEmail(username, email)) {
             throw new IllegalStateException("Username or Email is already registered.");
         }
         return repository.registerNewUser(username, email, phone, password, role, vehicleType, vehicleNumber);
+    }
+
+    public void resetPassword(String username, String emailOrPhone, String newPassword) {
+        if (username == null || username.isBlank() || emailOrPhone == null || emailOrPhone.isBlank()) {
+            throw new IllegalArgumentException("Username and registered Email or Mobile are required.");
+        }
+        validateStrongPassword(newPassword);
+        boolean ok = repository.resetUserPassword(username, emailOrPhone, newPassword);
+        if (!ok) {
+            throw new IllegalArgumentException("No matching account found for that username and email/mobile.");
+        }
     }
 
     private boolean isTwoWheeler(String vehicleType) {
